@@ -1,5 +1,12 @@
 'use strict'
 
+/** 
+    启动微服务可能导致mysql连接数超限，如下设置MySQL最大连接数
+    1、查看最大连接数
+    show variables like '%max_connections%';
+    2、修改最大连接数
+    set GLOBAL max_connections = 200;
+ */
 const gateway = require('../index');
 const { P2cBalancer } = require('load-balancers');
 const service = require('restana')({});
@@ -18,7 +25,7 @@ const targets = [
     'http://172.18.1.50:7003',
     'http://172.18.1.50:7004',
     'http://172.18.1.50:7005',
-]
+];
 const balancer = new P2cBalancer(targets.length);
 
 // mock service
