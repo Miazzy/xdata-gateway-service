@@ -21,4 +21,4 @@ gateway({
         },
         prefix: '/gateway',
     }]
-}).start(8080).then(() => console.log('API Gateway Service Start !'));
+}).start(38880).then(() => console.log('API Gateway Service Start !'));
