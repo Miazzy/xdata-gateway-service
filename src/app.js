@@ -106,7 +106,7 @@ gateway({
         // second enable rate limiter
         rateLimit({
             windowMs: 1 * 60 * 1000, // 1 minutes
-            max: 1000, // limit each IP to 1000 requests per windowMs
+            max: 1000000, // limit each IP to 1000 requests per windowMs
             handler: (req, res) => res.send({ code: '099', err: '您的请求速度太快了，请稍后尝试!', success: false }, 429)
         }),
         middleware503to404,
