@@ -20,6 +20,7 @@ module.exports = () => {
         groupName: 'DEFAULT_GROUP',
         serviceName: 'xdata-gateway-service',
         restServiceName: 'xdata-rest-service',
+        xmysqlServiceName: 'xdata-xmysql-service',
     };
 
     return {
