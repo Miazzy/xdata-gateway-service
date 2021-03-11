@@ -36,8 +36,11 @@ function getIpAddress() {
 /** target 改为 rest_service_name  */
 let targets = [];
 let xtargets = [];
+let estargets = [];
+
 let balancer = null;
 let xbalancer = null;
+let esbalancer = null;
 
 const middlewareNacos = async(req, res, next) => {
     const nacosConfig = config().nacos;
@@ -49,13 +52,16 @@ const middlewareNacos = async(req, res, next) => {
         port,
     });
     client.subscribe(nacosConfig.restServiceName, hosts => {
-        targets = hosts;
-        // 选出健康的targets;
+        targets = hosts; // 选出健康的targets;
         balancer = new P2cBalancer(targets.length);
     });
     client.subscribe(nacosConfig.xmysqlServiceName, hosts => {
-        xtargets = hosts;
+        xtargets = hosts; // 选出健康的targets;
         xbalancer = new P2cBalancer(xtargets.length);
+    });
+    client.subscribe(nacosConfig.elasticSearchServiceName, hosts => {
+        estargets = hosts; // 选出健康的targets;
+        esbalancer = new P2cBalancer(estargets.length);
     });
 }
 
@@ -159,6 +165,26 @@ gateway({
             breaker.fire([req, res, url, proxy, proxyOpts]);
         },
         prefix: '/gateway-xmysql',
+    }, {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
+            const target = estargets[esbalancer.pick()];
+            const baseURL = 'http://' + target.ip + ':' + target.port;
+            console.log(baseURL);
+            res.setHeader('x-header-base', baseURL);
+            // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
+
+            // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
+
+            if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
+                proxyOpts.base = defaultTarget;
+            } else {
+                proxyOpts.base = baseURL;
+            }
+            console.log('backend service: ' + proxyOpts.base + url);
+            breaker.fire([req, res, url, proxy, proxyOpts]);
+        },
+        prefix: '/gateway-elasticsearch',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => {
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中

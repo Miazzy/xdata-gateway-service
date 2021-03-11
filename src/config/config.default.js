@@ -21,6 +21,7 @@ module.exports = () => {
         serviceName: 'xdata-gateway-service',
         restServiceName: 'xdata-rest-service',
         xmysqlServiceName: 'xdata-xmysql-service',
+        elasticSearchServiceName: 'xdata-elasticsearch-service',
     };
 
     return {
