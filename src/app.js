@@ -128,6 +128,26 @@ gateway({
     routes: [{
         proxyHandler: async(req, res, url, proxy, proxyOpts) => {
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
+            //const target = xtargets[xbalancer.pick()];
+            const baseURL = 'http://172.18.6.202:30012';
+            console.log(baseURL);
+            res.setHeader('x-header-base', baseURL);
+            // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
+
+            // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
+
+            if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
+                proxyOpts.base = defaultTarget;
+            } else {
+                proxyOpts.base = baseURL;
+            }
+            console.log('backend service: ' + proxyOpts.base + url);
+            breaker.fire([req, res, url, proxy, proxyOpts]);
+        },
+        prefix: '/gateway-mdm',
+    }, {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://' + target.ip + ':' + target.port;
             console.log(baseURL);
