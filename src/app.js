@@ -129,13 +129,26 @@ gateway({
         proxyHandler: async(req, res, url, proxy, proxyOpts) => {
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             // const target = xtargets[xbalancer.pick()];
-            const baseURL = 'http://172.18.6.202:30012'; //主数据后端服务，目前只提供IP地址的后端URL
+            const baseURL = 'http://172.18.6.31:30013'; //主数据后端服务，目前只提供IP地址的后端URL
             console.log(`base url: `, baseURL);
             proxyOpts.base = baseURL;
+            res.setHeader('x-header-base', baseURL);
             console.log('backend service: ' + proxyOpts.base + url);
             breaker.fire([req, res, url, proxy, proxyOpts]);
         },
         prefix: '/gateway-mdm',
+    }, {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
+            // const target = xtargets[xbalancer.pick()];
+            const baseURL = 'http://172.18.6.202:30012'; //主数据后端服务，目前只提供IP地址的后端URL
+            console.log(`base url: `, baseURL);
+            proxyOpts.base = baseURL;
+            res.setHeader('x-header-base', baseURL);
+            console.log('backend service: ' + proxyOpts.base + url);
+            breaker.fire([req, res, url, proxy, proxyOpts]);
+        },
+        prefix: '/gateway-mdm-slave',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => {
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
