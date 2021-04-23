@@ -42,9 +42,13 @@ let balancer = null;
 let xbalancer = null;
 let esbalancer = null;
 
+let nacosConfigClient = null;
+
 const middlewareNacos = async(req, res, next) => {
     const nacosConfig = config().nacos;
     const ipAddress = getIpAddress()
+
+    // 注册服务
     const client = new nacos.NacosNamingClient(nacosConfig);
     await client.ready();
     await client.registerInstance(nacosConfig.serviceName, {
@@ -63,6 +67,13 @@ const middlewareNacos = async(req, res, next) => {
         estargets = hosts; // 选出健康的targets;
         esbalancer = new P2cBalancer(estargets.length);
     });
+
+    // 配置服务 // for direct mode
+    nacosConfigClient = new nacos.NacosConfigClient({
+        serverAddr: nacosConfig.serverList[0],
+    });
+    console.log(`serverAddr:`, nacosConfig.serverList);
+
 }
 
 middlewareNacos();
@@ -126,7 +137,17 @@ gateway({
         require('helmet')(),
     ],
     routes: [{
-        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //获取配置服务配置信息
+            console.log(`request: `, req.params.wild);
+            let content = await nacosConfigClient.getConfig(req.params.wild || 'system.admin.config', 'DEFAULT_GROUP');
+            if (typeof content == 'undefined' || content == null) {
+                content = { code: 99, err: 'no config info found...', };
+            }
+            res.send(content, 429);
+        },
+        prefix: '/gateway-config',
+    }, {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //主数据代理接口(主)
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             // const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://172.18.6.31:30013'; //主数据后端服务，目前只提供IP地址的后端URL
@@ -138,7 +159,7 @@ gateway({
         },
         prefix: '/gateway-mdm',
     }, {
-        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //主数据代理接口(从)
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             // const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://172.18.6.202:30012'; //主数据后端服务，目前只提供IP地址的后端URL
@@ -150,7 +171,7 @@ gateway({
         },
         prefix: '/gateway-mdm-slave',
     }, {
-        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://' + target.ip + ':' + target.port;
@@ -170,7 +191,7 @@ gateway({
         },
         prefix: '/gateway-rest',
     }, {
-        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://' + target.ip + ':' + target.port;
@@ -190,7 +211,7 @@ gateway({
         },
         prefix: '/gateway-xmysql',
     }, {
-        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //搜索引擎后端接口服务
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = estargets[esbalancer.pick()];
             const baseURL = 'http://' + target.ip + ':' + target.port;
@@ -210,7 +231,7 @@ gateway({
         },
         prefix: '/gateway-elasticsearch',
     }, {
-        proxyHandler: async(req, res, url, proxy, proxyOpts) => {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //通用后端接口服务
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = targets[balancer.pick()];
             const baseURL = 'http://' + target.ip + ':' + target.port;
