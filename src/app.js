@@ -68,10 +68,17 @@ const middlewareNacos = async(req, res, next) => {
         esbalancer = new P2cBalancer(estargets.length);
     });
 
+    //获取配置服务负载均衡器
+    let configBalancer = new P2cBalancer(nacosConfig.serverList.length);
+    let nacosServerAddr = nacosConfig.serverList[configBalancer.pick()];
+
+    console.log(`server addr: `, nacosServerAddr);
+
     // 配置服务 // for direct mode
     nacosConfigClient = new nacos.NacosConfigClient({
-        serverAddr: nacosConfig.serverList[0],
+        serverAddr: nacosServerAddr,
     });
+
     console.log(`serverAddr:`, nacosConfig.serverList);
 
 }
@@ -143,7 +150,7 @@ gateway({
             if (typeof content == 'undefined' || content == null) {
                 content = { code: 99, err: 'no config info found...', };
             }
-            res.send(content, 429);
+            res.send(content, 200);
         },
         prefix: '/gateway-config',
     }, {
