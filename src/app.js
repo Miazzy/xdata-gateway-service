@@ -158,6 +158,8 @@ gateway({
                     content = { code: 99, err: 'no config info found...', };
                 }
                 cache.put(req.params.wild, content, 3600);
+            } else {
+                console.info(`hit memory cache ... `, req.params.wild);
             }
 
             res.send(content, 200);
