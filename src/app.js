@@ -19,6 +19,8 @@ const os = require('os');
 const config = require('./config/config.default');
 const port = 3880;
 const defaultTarget = 'http://localhost:3881';
+const cache = require('memory-cache');
+
 
 function getIpAddress() {
     var ifaces = os.networkInterfaces()
@@ -146,10 +148,18 @@ gateway({
     routes: [{
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //获取配置服务配置信息
             console.log(`request: `, req.params.wild);
-            let content = await nacosConfigClient.getConfig(req.params.wild || 'system.admin.config', 'DEFAULT_GROUP');
+
+            let content = null;
+            content = cache.get(req.params.wild);
+
             if (typeof content == 'undefined' || content == null) {
-                content = { code: 99, err: 'no config info found...', };
+                content = await nacosConfigClient.getConfig(req.params.wild || 'system.admin.config', 'DEFAULT_GROUP');
+                if (typeof content == 'undefined' || content == null) {
+                    content = { code: 99, err: 'no config info found...', };
+                }
+                cache.put(req.params.wild, content, 3600);
             }
+
             res.send(content, 200);
         },
         prefix: '/gateway-config',
