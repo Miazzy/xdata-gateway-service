@@ -10,10 +10,11 @@ module.exports = () => {
 
     const config = exports = {};
     const nacosIP = '172.18.1.51';
+    const nacosList = [`${nacosIP}:8848`, `${nacosIP}:8849`, `${nacosIP}:8850`];
 
     config.nacos = {
         logger: console,
-        serverList: [`${nacosIP}:8848`, `${nacosIP}:8849`, `${nacosIP}:8850`],
+        serverList: nacosList,
         namespace: 'public',
         groupName: 'DEFAULT_GROUP',
         serviceName: 'xdata-gateway-service',
