@@ -7,15 +7,13 @@
  * @param {AppInfo} appInfo app info
  */
 module.exports = () => {
-    /**
-     * built-in config
-     * @type {Egg.EggAppConfig}
-     **/
+
     const config = exports = {};
+    const nacosIP = '172.18.1.51';
 
     config.nacos = {
         logger: console,
-        serverList: ['172.18.1.50:8848', '172.18.1.50:8849', '172.18.1.50:8850'], // replace to real nacos serverList
+        serverList: [`${nacosIP}:8848`, `${nacosIP}:8849`, `${nacosIP}:8850`],
         namespace: 'public',
         groupName: 'DEFAULT_GROUP',
         serviceName: 'xdata-gateway-service',
