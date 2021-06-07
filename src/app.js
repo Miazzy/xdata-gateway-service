@@ -216,7 +216,9 @@ gateway({
 
             //如果URL路径含有download,则获取路径中的IP地址
             if (url.includes('/download?name=')) {
-                target.ip = url.split('@')[1];
+                const ip = url.split('@')[1];
+                const list = xtargets.map(item => item.ip);
+                list.includes(ip) ? target.ip = ip : null;
                 console.log(`target ip:`, target.ip);
             }
 
