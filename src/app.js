@@ -213,7 +213,15 @@ gateway({
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = xtargets[xbalancer.pick()];
+
+            //如果URL路径含有download,则获取路径中的IP地址
+            if (url.includes('/download?name=')) {
+                target.ip = url.split('@')[1];
+                console.log(`target ip:`, target.ip);
+            }
+
             const baseURL = 'http://' + target.ip + ':' + target.port;
+
             console.log(baseURL);
             res.setHeader('x-header-base', baseURL);
             // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
