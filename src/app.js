@@ -213,12 +213,20 @@ gateway({
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = xtargets[xbalancer.pick()];
+            const list = xtargets.map(item => item.ip);
 
             //如果URL路径含有download,则获取路径中的IP地址
             if (url.includes('/download?name=')) {
                 const ip = url.split('@')[1];
-                const list = xtargets.map(item => item.ip);
                 list.includes(ip) ? target.ip = ip : null;
+                console.log(`target ip:`, target.ip);
+            }
+
+            //如果URL路径含有download,则获取路径中的IP地址
+            if (url.includes('/@')) {
+                const ip = url.split('@')[1];
+                list.includes(ip) ? target.ip = ip : null;
+                url = url.replace(`/@${ip}`, '');
                 console.log(`target ip:`, target.ip);
             }
 
