@@ -9,8 +9,8 @@
 module.exports = () => {
 
     const config = exports = {};
-    const nacosIP = '172.18.1.51';
-    const nacosList = [`${nacosIP}:8848`, `${nacosIP}:8849`, `${nacosIP}:8850`];
+    const nacosIP = 'nacos.yunwisdom.club'; //nacos IP地址 const nacosIP = '172.18.1.51';
+    const nacosList = [`${nacosIP}:30080`]; //  const nacosList = [`${nacosIP}:8848`, `${nacosIP}:8849`, `${nacosIP}:8850`];
 
     config.nacos = {
         logger: console,
