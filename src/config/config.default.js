@@ -19,6 +19,7 @@ module.exports = () => {
         groupName: 'DEFAULT_GROUP',
         serviceName: 'xdata-gateway-service',
         restServiceName: 'xdata-rest-service',
+        weworkServiceName: 'xdata-wework-service',
         xmysqlServiceName: 'xdata-xmysql-service',
         elasticSearchServiceName: 'xdata-elasticsearch-service',
     };

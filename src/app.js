@@ -38,10 +38,12 @@ function getIpAddress() {
 /** target 改为 rest_service_name  */
 let targets = [];
 let xtargets = [];
+let wxtargets = [];
 let estargets = [];
 
 let balancer = null;
 let xbalancer = null;
+let wxbalancer = null;
 let esbalancer = null;
 
 let nacosConfigClient = null;
@@ -60,6 +62,10 @@ const middlewareNacos = async(req, res, next) => {
     client.subscribe(nacosConfig.restServiceName, hosts => {
         targets = hosts; // 选出健康的targets;
         balancer = new P2cBalancer(targets.length);
+    });
+    client.subscribe(nacosConfig.weworkServiceName, hosts => {
+        wxtargets = hosts; // 选出健康的targets;
+        wxbalancer = new P2cBalancer(wxtargets.length);
     });
     client.subscribe(nacosConfig.xmysqlServiceName, hosts => {
         xtargets = hosts; // 选出健康的targets;
@@ -167,8 +173,6 @@ gateway({
         prefix: '/gateway-config',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //主数据代理接口(主)
-            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            // const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://172.18.6.31:30013'; //主数据后端服务，目前只提供IP地址的后端URL
             console.log(`base url: `, baseURL);
             proxyOpts.base = baseURL;
@@ -179,8 +183,6 @@ gateway({
         prefix: '/gateway-mdm',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //主数据代理接口(从)
-            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            // const target = xtargets[xbalancer.pick()];
             const baseURL = 'http://172.18.6.202:30012'; //主数据后端服务，目前只提供IP地址的后端URL
             console.log(`base url: `, baseURL);
             proxyOpts.base = baseURL;
@@ -191,9 +193,8 @@ gateway({
         prefix: '/gateway-mdm-slave',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
-            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            const target = xtargets[xbalancer.pick()];
-            const list = xtargets.map(item => item.ip);
+            const target = targets[balancer.pick()]; // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
+            const list = targets.map(item => item.ip);
 
             if (url.includes('/@')) {
                 const ip = url.split('@')[1];
@@ -204,6 +205,7 @@ gateway({
 
             const baseURL = 'http://' + target.ip + ':' + target.port;
             console.log(baseURL);
+
             res.setHeader('x-header-base', baseURL);
             // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
 
@@ -220,8 +222,32 @@ gateway({
         prefix: '/gateway-rest',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
-            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            const target = xtargets[xbalancer.pick()];
+            const target = wxtargets[wxbalancer.pick()]; // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
+            const list = wxtargets.map(item => item.ip);
+
+            if (url.includes('/@')) {
+                const ip = url.split('@')[1];
+                list.includes(ip) ? target.ip = ip : null;
+                url = url.replace(`/@${ip}@`, '');
+                console.log(`target ip:`, target.ip);
+            }
+
+            const baseURL = 'http://' + target.ip + ':' + target.port;
+            console.log(baseURL);
+            res.setHeader('x-header-base', baseURL);
+
+            if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
+                proxyOpts.base = defaultTarget;
+            } else {
+                proxyOpts.base = baseURL;
+            }
+            console.log('backend service: ' + proxyOpts.base + url);
+            breaker.fire([req, res, url, proxy, proxyOpts]);
+        },
+        prefix: '/gateway-wework',
+    }, {
+        proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
+            const target = xtargets[xbalancer.pick()]; // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const list = xtargets.map(item => item.ip);
 
             //如果URL路径含有download,则获取路径中的IP地址
@@ -258,7 +284,7 @@ gateway({
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //搜索引擎后端接口服务
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = estargets[esbalancer.pick()];
-            const list = xtargets.map(item => item.ip);
+            const list = estargets.map(item => item.ip);
 
             if (url.includes('/@')) {
                 const ip = url.split('@')[1];
@@ -288,7 +314,7 @@ gateway({
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //通用后端接口服务
             // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const target = targets[balancer.pick()];
-            const list = xtargets.map(item => item.ip);
+            const list = targets.map(item => item.ip);
 
             if (url.includes('/@')) {
                 const ip = url.split('@')[1];
