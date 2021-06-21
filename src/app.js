@@ -130,19 +130,17 @@ breaker.fallback(([req, res], err) => {
 
 console.log(defaultTarget.split(':')[2]);
 
-// mock service
+/** mock service */
 service.get('/**/*', (req, res) => res.send({ code: '099', err: 'token err.', success: false })).start(parseInt(defaultTarget.split(':')[2])).then(() => console.log('Public Service Start!'));
 
-// gateway service
+/** gateway service */
 gateway({
     middlewares: [
-        // first acquire request IP
-        (req, res, next) => {
+        (req, res, next) => { // first acquire request IP
             req.ip = requestIp.getClientIp(req)
             return next()
         },
-        // second enable rate limiter
-        rateLimit({
+        rateLimit({ // second enable rate limiter
             windowMs: 1 * 60 * 1000, // 1 minutes
             max: 1000000, // limit each IP to 1000 requests per windowMs
             handler: (req, res) => res.send({ code: '099', err: '您的请求速度太快了，请稍后尝试!', success: false }, 429)
@@ -205,11 +203,7 @@ gateway({
 
             const baseURL = 'http://' + target.ip + ':' + target.port;
             console.log(baseURL);
-
-            res.setHeader('x-header-base', baseURL);
-            // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
-
-            // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
+            res.setHeader('x-header-base', baseURL); // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行 // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
 
             if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
                 proxyOpts.base = defaultTarget;
@@ -248,9 +242,8 @@ gateway({
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //数据库RestAPI接口
             const target = xtargets[xbalancer.pick()]; // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            const list = xtargets.map(item => item.ip);
+            const list = xtargets.map(item => item.ip); //如果URL路径含有/download或者/@{ip}@,则获取路径中的IP地址
 
-            //如果URL路径含有download,则获取路径中的IP地址
             if (url.includes('/download?name=')) {
                 const ip = url.split('@')[1];
                 list.includes(ip) ? target.ip = ip : null;
@@ -264,12 +257,8 @@ gateway({
             }
 
             const baseURL = 'http://' + target.ip + ':' + target.port;
-
             console.log(baseURL);
-            res.setHeader('x-header-base', baseURL);
-            // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
-
-            // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
+            res.setHeader('x-header-base', baseURL); // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行 // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
 
             if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
                 proxyOpts.base = defaultTarget;
@@ -282,8 +271,7 @@ gateway({
         prefix: '/gateway-xmysql',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //搜索引擎后端接口服务
-            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            const target = estargets[esbalancer.pick()];
+            const target = estargets[esbalancer.pick()]; // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const list = estargets.map(item => item.ip);
 
             if (url.includes('/@')) {
@@ -295,11 +283,7 @@ gateway({
 
             const baseURL = 'http://' + target.ip + ':' + target.port;
             console.log(baseURL);
-
-            res.setHeader('x-header-base', baseURL);
-            // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
-
-            // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
+            res.setHeader('x-header-base', baseURL); // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行 // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
 
             if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
                 proxyOpts.base = defaultTarget;
@@ -312,8 +296,7 @@ gateway({
         prefix: '/gateway-elasticsearch',
     }, {
         proxyHandler: async(req, res, url, proxy, proxyOpts) => { //通用后端接口服务
-            // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
-            const target = targets[balancer.pick()];
+            const target = targets[balancer.pick()]; // 使用负载均衡算法，选取一个API服务地址，配置到proxy.Opts.base中
             const list = targets.map(item => item.ip);
 
             if (url.includes('/@')) {
@@ -325,11 +308,7 @@ gateway({
 
             const baseURL = 'http://' + target.ip + ':' + target.port;
             console.log(baseURL);
-
-            res.setHeader('x-header-base', baseURL);
-            // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行
-
-            // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
+            res.setHeader('x-header-base', baseURL); // 对此API服务地址，就行健康检查(/_health)，如果不正常，则重新选取API服务地址，并将此API地址，从服务列表中移除。如果正常，则继续执行 // 检查请求频率，如果过高，加入黑名单，黑名单失效后，移除黑名单
 
             if (url && url.endsWith('hello') || false /** session or token 验证失效 */ ) {
                 proxyOpts.base = defaultTarget;
