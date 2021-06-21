@@ -35,7 +35,7 @@ function getIpAddress() {
     }
 }
 
-/** target 改为 rest_service_name  */
+/** target 目标服务IP地址+Port端口  */
 let targets = [];
 let xtargets = [];
 let wxtargets = [];
@@ -52,8 +52,7 @@ const middlewareNacos = async(req, res, next) => {
     const nacosConfig = config().nacos;
     const ipAddress = getIpAddress()
 
-    // 注册服务
-    const client = new nacos.NacosNamingClient(nacosConfig);
+    const client = new nacos.NacosNamingClient(nacosConfig); // 注册网关服务
     await client.ready();
     await client.registerInstance(nacosConfig.serviceName, {
         ip: ipAddress,
@@ -76,16 +75,13 @@ const middlewareNacos = async(req, res, next) => {
         esbalancer = new P2cBalancer(estargets.length);
     });
 
-    //获取配置服务负载均衡器
-    let configBalancer = new P2cBalancer(nacosConfig.serverList.length);
+    let configBalancer = new P2cBalancer(nacosConfig.serverList.length); //获取配置服务负载均衡器
     let nacosServerAddr = nacosConfig.serverList[configBalancer.pick()];
 
     console.log(`server addr: `, nacosServerAddr);
-
-    // 配置服务 // for direct mode
     nacosConfigClient = new nacos.NacosConfigClient({
         serverAddr: nacosServerAddr,
-    });
+    }); // 配置服务 // for direct mode
 
     console.log(`serverAddr:`, nacosConfig.serverList);
 
