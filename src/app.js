@@ -58,7 +58,7 @@ const middlewareNacos = async(req, res, next) => {
         ip: ipAddress,
         port,
     });
-    client.subscribe(nacosConfig.restServiceName, hosts => {
+    client.subscribe(nacosConfig.weworkServiceName, hosts => {
         targets = hosts; // 选出健康的targets;
         balancer = new P2cBalancer(targets.length);
     });
